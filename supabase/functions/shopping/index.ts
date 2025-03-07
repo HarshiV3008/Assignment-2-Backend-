@@ -12,16 +12,21 @@ serve(async (req: Request) => {
   try {
     const url = new URL(req.url);
     const method = req.method;
+    const searchQuery = url.searchParams.get("search");
+    const sortQuery = url.searchParams.get("sort");
 
-    // Fetch all items (optionally sorted by place)
+    // 🔹 Handle GET requests (Fetch & Sort Items)
     if (method === "GET") {
-      const sortBy = url.searchParams.get("sort");
       let query = supabase.from("shopping").select("*");
 
-      if (sortBy === "place") {
-        query = query.order("place", { ascending: true });
-      } else {
-        query = query.order("created_at", { ascending: false });
+      // Apply search filter if provided
+      if (searchQuery) {
+        query = query.ilike("name", `%${searchQuery}%`);
+      }
+
+      const placeFilter = url.searchParams.get("place");
+      if (placeFilter) {
+        query = query.eq("place", placeFilter);
       }
 
       const { data, error } = await query;
@@ -30,19 +35,7 @@ serve(async (req: Request) => {
       return new Response(JSON.stringify(data), { headers });
     }
 
-    // Search for items by name
-    if (method === "GET" && url.searchParams.get("search")) {
-      const searchQuery = url.searchParams.get("search") || "";
-      const { data, error } = await supabase
-        .from("shopping")
-        .select("*")
-        .ilike("name", `%${searchQuery}%`);
-
-      if (error) throw error;
-      return new Response(JSON.stringify(data), { headers });
-    }
-
-    // Add a new item
+    // 🔹 Add a new item
     if (method === "POST") {
       const { name, quantity, place } = await req.json();
       const { error } = await supabase.from("shopping").insert([{ name, quantity, place }]);
@@ -51,7 +44,7 @@ serve(async (req: Request) => {
       return new Response(JSON.stringify({ success: true, message: "Item added!" }), { headers });
     }
 
-    // Update an item (name, quantity, place)
+    // 🔹 Update an item (name, quantity, place)
     if (method === "PUT") {
       const { id, name, quantity, place } = await req.json();
       const { error } = await supabase
@@ -63,7 +56,7 @@ serve(async (req: Request) => {
       return new Response(JSON.stringify({ success: true, message: "Item updated!" }), { headers });
     }
 
-    // Delete an item by ID
+    // 🔹 Delete an item by ID
     if (method === "DELETE") {
       const { id } = await req.json();
       const { error } = await supabase.from("shopping").delete().eq("id", id);
