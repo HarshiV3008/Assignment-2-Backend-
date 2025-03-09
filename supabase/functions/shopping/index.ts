@@ -38,22 +38,30 @@ serve(async (req: Request) => {
     // 🔹 Add a new item
     if (method === "POST") {
       const { name, quantity, place } = await req.json();
-      const { error } = await supabase.from("shopping").insert([{ name, quantity, place }]);
+      const { error } = await supabase.from("shopping").insert([
+        { name, quantity, place, purchased: false }, // Default purchased status is false
+      ]);
 
       if (error) throw error;
-      return new Response(JSON.stringify({ success: true, message: "Item added!" }), { headers });
+      return new Response(
+        JSON.stringify({ success: true, message: "Item added!" }),
+        { headers }
+      );
     }
 
-    // 🔹 Update an item (name, quantity, place)
+    // 🔹 Update an item (including purchased status)
     if (method === "PUT") {
-      const { id, name, quantity, place } = await req.json();
+      const { id, name, quantity, place, purchased } = await req.json();
       const { error } = await supabase
         .from("shopping")
-        .update({ name, quantity, place })
+        .update({ name, quantity, place, purchased })
         .eq("id", id);
 
       if (error) throw error;
-      return new Response(JSON.stringify({ success: true, message: "Item updated!" }), { headers });
+      return new Response(
+        JSON.stringify({ success: true, message: "Item updated!" }),
+        { headers }
+      );
     }
 
     // 🔹 Delete an item by ID
@@ -62,11 +70,31 @@ serve(async (req: Request) => {
       const { error } = await supabase.from("shopping").delete().eq("id", id);
 
       if (error) throw error;
-      return new Response(JSON.stringify({ success: true, message: "Item deleted!" }), { headers });
+      return new Response(
+        JSON.stringify({ success: true, message: "Item deleted!" }),
+        { headers }
+      );
     }
 
-    return new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405, headers });
+    // 🔹 Clear all purchased items
+    if (method === "DELETE" && url.pathname === "/clearPurchased") {
+      const { error } = await supabase.from("shopping").delete().eq("purchased", true);
+
+      if (error) throw error;
+      return new Response(
+        JSON.stringify({ success: true, message: "Purchased items cleared!" }),
+        { headers }
+      );
+    }
+
+    return new Response(
+      JSON.stringify({ error: "Method not allowed" }),
+      { status: 405, headers }
+    );
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), { status: 500, headers });
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { status: 500, headers }
+    );
   }
 });
