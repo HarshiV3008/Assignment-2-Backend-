@@ -49,12 +49,12 @@ serve(async (req: Request) => {
       );
     }
 
-    // 🔹 Update an item (including purchased status)
+    // 🔹 Update an item 
     if (method === "PUT") {
-      const { id, name, quantity, place, purchased } = await req.json();
+      const { id, name, quantity, place} = await req.json();
       const { error } = await supabase
         .from("shopping")
-        .update({ name, quantity, place, purchased })
+        .update({ name, quantity, place})
         .eq("id", id);
 
       if (error) throw error;
@@ -76,21 +76,6 @@ serve(async (req: Request) => {
       );
     }
 
-    // 🔹 Clear all purchased items
-    if (method === "DELETE" && url.pathname === "/clearPurchased") {
-      const { error } = await supabase.from("shopping").delete().eq("purchased", true);
-
-      if (error) throw error;
-      return new Response(
-        JSON.stringify({ success: true, message: "Purchased items cleared!" }),
-        { headers }
-      );
-    }
-
-    return new Response(
-      JSON.stringify({ error: "Method not allowed" }),
-      { status: 405, headers }
-    );
   } catch (error) {
     return new Response(
       JSON.stringify({ error: error.message }),
